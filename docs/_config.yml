@@ -5,4 +5,18 @@ baseurl: ""
 url: "https://jasoncarter80.github.io/DAND/"
 twitter_username: TampaDBA
 github_username:  JasonCarter80
-theme: jekyll-theme-architect
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+
+exclude:
+   - Gemfile
+   - Gemfile.lock
+   - node_modules
+   - vendor/bundle/
+   - vendor/cache/
+   - vendor/gems/
+   - vendor/ruby/

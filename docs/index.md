@@ -17,5 +17,5 @@ of the course-work from Western Governors University's Data Management/Data Anal
 6. Data Visualization - Make Effective Data Visualization
 
 
-![Udacity]({{ "/images/udacity-2.svg" | absolute_url }})
-![Western Governors University]({{ "/images/wgu.png" | absolute_url }})
+![Udacity]({{ "/images/udacity-2.svg" | absolute_url }}){:width="45%"}
+![Western Governors University]({{ "/images/wgu.png" | absolute_url }}){:width="45%"}

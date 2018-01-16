@@ -1,4 +1,5 @@
 ---
+layout: default
 title: "P1_Test_A_Perceptual_Phenomenon"
 original_title: "P1_Test_A_Perceptual_Phenomenon"
 original_file_path: "/Users/jason/Documents/WGU/DAND/./P1_Test_A_Perceptual_Phenomenon/P1_Test_A_Perceptual_Phenomenon.ipynb"

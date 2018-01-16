@@ -1,14 +1,13 @@
 ---
 title: "P3_Data_Wrangling"
-original_title: "P3_Data_Wrangling"
-original_file_path: "/Users/jason/Documents/WGU/DAND/./P3_Data_Wrangling/P3_Data_Wrangling.ipynb"
-original_extension: ipynb
+author: "Jason Carter"
+email: "Jason@Jason-Carter.Net"
 lines_of_code: 3
 tags:
     - jupyter
     - python
     - notebook
-layout: notebook
+layout: default
 
 ---
 # OpenStreetMap Data Wrangling with MariaDB

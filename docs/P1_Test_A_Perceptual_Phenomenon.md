@@ -1,15 +1,13 @@
 ---
-layout: default
 title: "P1_Test_A_Perceptual_Phenomenon"
-original_title: "P1_Test_A_Perceptual_Phenomenon"
-original_file_path: "/Users/jason/Documents/WGU/DAND/./P1_Test_A_Perceptual_Phenomenon/P1_Test_A_Perceptual_Phenomenon.ipynb"
-original_extension: ipynb
+author: "Jason Carter"
+email: "Jason@Jason-Carter.Net"
 lines_of_code: 67
 tags:
     - jupyter
     - python
     - notebook
-layout: notebook
+layout: default
 
 ---
 # Questions For Investigation

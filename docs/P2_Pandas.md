@@ -1,14 +1,13 @@
 ---
 title: "P2_Pandas"
-original_title: "P2_Pandas"
-original_file_path: "/Users/jason/Documents/WGU/DAND/./P2_Pandas/P2_Pandas.ipynb"
-original_extension: ipynb
+author: "Jason Carter"
+email: "Jason@Jason-Carter.Net"
 lines_of_code: 140
 tags:
     - jupyter
     - python
     - notebook
-layout: notebook
+layout: default
 
 ---
 # Evaluation of Titanic Passenger list

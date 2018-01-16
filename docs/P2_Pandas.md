@@ -21,7 +21,7 @@ by Jason Carter
 October 24, 2017
 
 
-{% highlight python %}
+{% raw %}
 ### Imports  
 %config InlineBackend.figure_format = 'retina'   ### Make it pretty on my Mac
 %matplotlib inline
@@ -40,15 +40,15 @@ def labelMax(ax, x_offset=-0.02, y_offset = 0.5):
         b = p.get_bbox()
         val = "{:.2f}".format(b.y1 + b.y0)        
         ax.annotate(val, ((b.x0 + b.x1)/2 + x_offset, b.y1 + y_offset))
-{% endhighlight %}
+{% endraw %}
 
 
-{% highlight python %}
+{% raw %}
 %%html
 <style>
 table {float:left}
 </style>
-{% endhighlight %}
+{% endraw %}
 
 
 <style>
@@ -57,14 +57,14 @@ table {float:left}
 
 
 
-{% highlight python %}
+{% raw %}
 #### Read in our data
 df = pd.read_csv('titanic-data.csv')
 df.head()
 print("----------------------------")
 df.info()
 
-{% endhighlight %}
+{% endraw %}
 
 
 
@@ -208,22 +208,22 @@ df.info()
 
 
 
-{% highlight python %}
+{% raw %}
 ### Remove columns to streamline
 del df['PassengerId']
 del df['Cabin']
 del df['Ticket']       
 del df['Name']           
 
-{% endhighlight %}
+{% endraw %}
 
 
-{% highlight python %}
+{% raw %}
         
 
 
 
-{% endhighlight %}
+{% endraw %}
 
 Evaluating the information about the data we are missing a good bit of the ages.
 Lets see if we can find any relationships in the data so we can find the best
@@ -231,7 +231,7 @@ way to back fill those data points.
 
 
 
-{% highlight python %}
+{% raw %}
 #### Age
 
 fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(15,15))
@@ -256,7 +256,7 @@ a3 = df.groupby(['Sex', 'Pclass','Embarked']).mean()['Age'].plot(
     color=['r','b','y'], 
     ax=axes[1,0]);       
 labelMax(a3)
-{% endhighlight %}
+{% endraw %}
 
 
 ![png](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABt4AAAdOCAYAAABiE1w5AAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
@@ -2202,7 +2202,7 @@ ages.
 
 
 
-{% highlight python %}
+{% raw %}
 #Lets double check the Embark for NaN
 df[df['Embarked'].isnull()]
 
@@ -2217,7 +2217,7 @@ labelMax(a1)
 
 ## Embark Missing Values with most prevelant
 df.loc[df['Embarked'].isnull(),'Embarked'] = 'S'
-{% endhighlight %}
+{% endraw %}
 
 
 
@@ -2635,7 +2635,7 @@ SSogg7wkSZJUQAZ5SZIkqYD+D4kR55xve8flAAAAAElFTkSuQmCC
 
 
 
-{% highlight python %}
+{% raw %}
 ## Fill in empty ages with averages by sex and class and point of embarkation
 df['Age_C'] = df['Age'].groupby([df['Sex'], df['Pclass'], df['Embarked']]).apply(lambda x: x.fillna(x.median()))
 df['Age_C'] = df['Age_C'].astype(int)
@@ -2644,10 +2644,10 @@ df['Age_C'] = df['Age_C'].astype(int)
 df['Fare'] = df['Fare'].astype(int)
 
 
-{% endhighlight %}
+{% endraw %}
 
 
-{% highlight python %}
+{% raw %}
 figure = plt.figure(figsize=(15,8))
 a = plt.subplot(2, 2, 1)
 a = plt.hist([df[df['Survived']==1]['Age_C'], 
@@ -2672,7 +2672,7 @@ b = plt.ylabel('Number of passengers')
 b = plt.xticks(range(0,4) )
 b = plt.legend()
 
-{% endhighlight %}
+{% endraw %}
 
 
 ![png](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA2gAAAPCCAYAAAANkfu1AAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
@@ -3321,7 +3321,7 @@ JEnqCQOaJEmSJPWEAU2SJEmSeuL/A4d3obHZIoz0AAAAAElFTkSuQmCC
 
 
 
-{% highlight python %}
+{% raw %}
 ### Fares
 fig, axes = plt.subplots(figsize=(15,5))
 
@@ -3334,7 +3334,7 @@ b = plt.xlabel('Fare')
 b = plt.ylabel('Number of passengers')
 
 
-{% endhighlight %}
+{% endraw %}
 
 
 ![png](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABvkAAAJ7CAYAAADJHf0pAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
@@ -3675,7 +3675,7 @@ AAAAAACAkRHyAQAAAAAAwMgI+QAAAAAAAGBkhHwAAAAAAAAwMkI+AAAAAAAAGBkhHwAAAAAAAIzM
 
 
 
-{% highlight python %}
+{% raw %}
 %matplotlib inline
 fig, ax = subplots()
 title = 'Scatter Plot of\n Survived vs Perished\n by Age/Fare'
@@ -3694,10 +3694,10 @@ b = ax.legend(['Mean Survival Fare - ${:.1f}'.format(sf_mean),
                'Perished']
              )
 
-{% endhighlight %}
+{% endraw %}
 
 
-{% highlight python %}
+{% raw %}
 xt = pd.crosstab(df['Sex'], df['Pclass'], df['Survived'],  aggfunc='count')
 xt
-{% endhighlight %}
+{% endraw %}

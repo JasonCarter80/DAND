@@ -49,7 +49,7 @@ occur.
 
 
 
-{% highlight python %}
+{% raw %}
 %config InlineBackend.figure_format = 'retina'
 import pandas as pd
 from scipy import stats
@@ -57,19 +57,19 @@ import numpy as np
 from IPython.display import HTML, display
 import pylab as pl
 import math
-{% endhighlight %}
+{% endraw %}
 
 
-{% highlight python %}
+{% raw %}
 #### Read in our data
 df = pd.read_csv('stroopdata.csv')
-{% endhighlight %}
+{% endraw %}
 
 #### Report some descriptive statistics regarding this dataset. Include at least
 one measure of central tendency and at least one measure of variability.
 
 
-{% highlight python %}
+{% raw %}
 #### Calculate some basic numbers against the data
 cstd = np.std(df['Congruent'])
 istd = np.std(df['Incongruent'])
@@ -79,7 +79,7 @@ imean = np.mean(df['Incongruent'])
 
 df.describe()
 
-{% endhighlight %}
+{% endraw %}
 
 
 
@@ -163,7 +163,7 @@ could be considered normal distrubtions and the mean values of the Incongruent
 is just over 50% higher.
 
 
-{% highlight python %}
+{% raw %}
 %matplotlib inline
 a = df.plot.hist(alpha=0.5,title='Histogram of Test Scores',figsize=(12,6))
 
@@ -180,7 +180,7 @@ b = a.annotate(r'$\bar{x}$ InCongruent({%.4g})' % imean, xy=(imean, 5), xytext=(
             arrowprops=dict(facecolor='black', shrink=0.05),
             )
 
-{% endhighlight %}
+{% endraw %}
 
 
 ![png](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABZEAAALpCAYAAADCYWjkAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
@@ -817,7 +817,7 @@ SUVORK5CYII=
 We will choose 95% as our confidence level
 
 
-{% highlight python %}
+{% raw %}
 confidence_level = 0.95
 degF = len(df)-1                                            ### Count Degrees of Freedom
 
@@ -845,7 +845,7 @@ a = pl.xlabel("x")                                           ### Don't forget th
 a = pl.ylabel("P(x)")                                        ### Labels!!!
 
 
-{% endhighlight %}
+{% endraw %}
 
 
 ![png](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAxMAAAJiCAYAAAC8U5+AAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
@@ -1462,12 +1462,12 @@ AAAAAElFTkSuQmCC
 #### What is your confidence level and your critical statistic value?
 
 
-{% highlight python %}
+{% raw %}
 print("Confidence Level: %s " % confidence_level)
 print("Degrees of Freedom: %s " % degF)
 print("T-Critical: %s " % t_crit)
 
-{% endhighlight %}
+{% endraw %}
 
     Confidence Level: 0.95 
     Degrees of Freedom: 23 
@@ -1492,11 +1492,11 @@ effect? Some research about the problem will be helpful for thinking about these
 two questions!
 
 
-{% highlight python %}
+{% raw %}
 
-{% endhighlight %}
+{% endraw %}
 
 
-{% highlight python %}
+{% raw %}
 
-{% endhighlight %}
+{% endraw %}

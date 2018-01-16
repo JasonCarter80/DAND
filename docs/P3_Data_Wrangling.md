@@ -43,10 +43,10 @@ cities, Clearwater and St. Petersburg, as well as many other small towns.
 https://en.wikipedia.org/wiki/Tampa_Bay
 
 
-{% highlight python %}
+{% raw %}
 from IPython.display import Image
 Image("https://upload.wikimedia.org/wikipedia/commons/5/5c/Tampa_florida_map.jpg", width ="400")
-{% endhighlight %}
+{% endraw %}
 
 
 
@@ -3411,6 +3411,6 @@ numbered-street-names?noredirect=1#comment82709209_47871354
 
 
 
-{% highlight python %}
+{% raw %}
 
-{% endhighlight %}
+{% endraw %}

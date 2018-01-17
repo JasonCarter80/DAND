@@ -1,0 +1,774 @@
+---
+title:  |
+  | Evaluating Presidential Election Donors \n
+  | from State of Florida\n
+author: "Jason Carter"
+date: "3 Janaury 2018"
+knit: (function(inputFile, encoding) { out_dir <- '../docs'; rmarkdown::render(inputFile, encoding=encoding, output_file=file.path(dirname(inputFile), out_dir, 'index.html')) })
+output: 
+  html_document: 
+    css: "../docs/markdown.css"
+    fig_caption: yes
+    keep_md: yes
+    toc: yes
+    toc_depth: 1
+  md_document:
+    variant: markdown_github
+editor_options: 
+  chunk_output_type: inline
+---
+```{r setup, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+## Defaults
+knitr::opts_knit$set(root.dir=normalizePath('../'))
+knitr::opts_chunk$set(fig.path = "../graphics/")
+knitr::opts_chunk$set(cache.path = "../cache/")
+knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+
+```
+
+```{r LibraryLoad }
+### Load ggplot2 directly from Github to get the new geom_sf feature.
+if(!require(ggplot2)){
+  library(devtools)
+  
+  devtools::install_github("tidyverse/rlang")
+  devtools::install_github("tidyverse/ggplot2")
+  library(ggplot2)
+}
+
+### Use PacMan to Install and Load Required Packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, viridis, ggthemes,data.table,
+               albersusa,noncensus, ggmap,geosphere,gridExtra,
+               dplyr, plyr,scales, polycor, gender)
+
+
+
+```
+
+# Introduction
+
+For this project, I chose to work with one of the data sets suggested by Udacity. The dataset is Financial Contributions to Presidential Campaigns for the State of Florida.  I chose this dataset as elections interest me, and I live in the State of Florida. The data comes directly from the Federal Election Commission’s website.
+
+The data is provided in a ZIPPED, CSV file.   The CSV layout is provided by the Federal Election Commision as documented below. 
+
+```{r DataLoad, include=TRUE}
+filename<- "data/P00000001-FL.csv"
+header <- read.csv(filename, header = FALSE, stringsAsFactors = FALSE, nrows = 1)
+column_names <- unname(unlist(header))
+body <- read.csv(filename, header = FALSE, skip = 1, nrows=2000)
+body <- body[, 1:length(body)-1]
+names(body) <- column_names
+rm(body); rm(header)
+
+column_names <- c(column_names, "dummy")
+df.Export <- read.csv(filename,
+                     header = FALSE, col.names = column_names, skip = 1)
+df.Export$dummy <- NULL
+
+rm(column_names)
+rm(filename)
+```
+
+# Data Load
+
+I had some issues loading the data due to a trailing comma on the data rows, but not on the header row, which caused data shifting and made a complete mess of the dataframe.   I found another project had the same issue and used a method to read the headers and adjust the data load accordingly (https://github.com/winkelman/udacity-dand-eda/blob/master/project.Rmd)   This method was the most complete I could find in my research so I applied the same method from that project.
+
+Once loaded, we can see that the dataset contains `r nrow(df.Export)` rows with `r ncol(df.Export)` columns which matches the data dictionary provided by the FEC: ftp://ftp.fec.gov/FEC/Presidential_Map/2016/DATA_DICTIONARIES/CONTRIBUTOR_FORMAT.txt
+
+## Source Clean Up
+
+This is a relatively large data set, and there are many fields that we just don't need for our analysis.  I will drop those columns to make the data a bit more manageable as well as rename the remaining ones to be more user friendly.
+
+**Note:** It may seem I have taken important data fields out, but I will rejoin those using complete dataset based off of zip code below.
+
+```{r DataTrim, echo=TRUE}
+#### Get just what we want
+df.data <- subset(df.Export, select=c("cand_id", "cand_nm", "contbr_nm","contbr_zip", 
+                                        "contbr_employer", "contbr_occupation",
+                                        "contb_receipt_amt", "contb_receipt_dt"))
+
+#### Friendly Name Them 
+names(df.data) <- c("can_id", "candidate", "name", "zip",
+                      "employer", "occupation", "amount", 
+                      "date")
+summary(df.data)
+
+```
+
+## Donation Amounts
+Looking at the summary I see the max is \$20,000 which is above the FEC max of $2700, and the minimum is negative at -\$20,000.  Lets look at it.
+
+```{r DonationAmounts_Box_Fixed}
+ggplot(data = df.data, 
+       aes(x= "Contribusions", y=amount)) +
+  geom_boxplot() +
+  labs(title="All Contributions") 
+
+```
+
+Immediately I see that there are negative numbers in the amount column, which the FEC data dictionary shows as refunds, let take out those and anything above the statutory giving limit of $2700.   Note, in a more in-depth investigation I would want to remove the refund AND the matching donation, but that level of matching is not necesarry for my purposes here.
+
+
+```{r ExcludeNegatives}
+excludes<- filter(df.data, amount < 1 |  amount > 2700 )
+df.data<-anti_join(df.data, excludes, by=c('name', 'amount','date'))
+rm(excludes)
+```
+
+```{r DonationAmounts_BoxFixed}
+ggplot(data = df.data, aes(x= "Contribusions", y=amount)) +
+  geom_boxplot() +
+  labs(title="Valid Contributions") 
+
+```
+
+
+
+
+## Zip Codes
+If we want to plot this data on a map for visual analysis, we'll need to standardize the zip code as it currently has a mix of 5 and 9 digit zip-code.  Since our analysis won't make sense at that level of specicifity, we'll standardize to 5.    
+
+
+
+```{r ZipCodeFix, echo=TRUE, message=FALSE}
+## Strip all except first 5 characters
+df.data$zip <- substring(df.data$zip, 1, 5)
+```
+
+```{r ZipCode_Map, echo=TRUE, message=FALSE, warning=FALSE}
+
+### Let visually check ZipCodes
+data(zip_codes)
+map<-get_map(location='united states', zoom=4, maptype = "terrain",
+             source='google',color='color')
+
+map.data<-unique(subset(inner_join(df.data, zip_codes, "zip"), select=c("longitude", "latitude")))
+
+ggmap(map) + 
+  geom_point(
+    data=map.data,      
+    aes( x=longitude, y=latitude), color="red" ,
+    alpha=.5, na.rm = T)  + 
+        scale_color_gradient(low="beige", high="blue")
+```
+
+Looking here, we know these errand dots are not proper.  Digging into zip-codes. I find that zipcodes between 32000 and 34999 are proper for Florida. (http://www.zipcodestogo.com/Florida/) All others I will remove.   
+
+Some of those donations could likely be by members of the armed services or simply living part time in other states, I'll look at that too.
+
+```{r CheckoutOddZips, message=FALSE, warning=FALSE, error=FALSE}
+## Checkout Odd Zip Codes
+removed_zips<-subset(df.data, df.data$zip < 32000 | df.data$zip > 34999)
+##removed_zips$zip<- as.factor(removed_zips$zip)  ### Not Sure why?
+removed_subset<-subset(inner_join(removed_zips, zip_codes, by="zip"), select=c("city", "state"))
+
+## Quick Review
+removed_subset %>% 
+  group_by(city, state) %>% 
+  dplyr::summarize(count=length(city)) %>% 
+  arrange(-count)
+
+rm(removed_zips)
+rm(removed_subset)
+```
+
+Looking at these, I don't see any indication of any specific reason they should be in there, but for the sake and double check with our map again.
+
+```{r RemoveOddZips, warning=FALSE}
+df.data$zip[df.data$zip < 32000 | df.data$zip > 34999] <- NA 
+```
+
+```{r ZipCode_Map_Fixed, warning=FALSE}
+map.data<-unique(subset(inner_join(df.data, zip_codes, "zip"), select=c("longitude", "latitude")))
+
+ggmap(map) + 
+  geom_point(
+    data=map.data,      
+    aes( x=longitude, y=latitude), color="red" ,
+    alpha=.5, na.rm = T)  + 
+        scale_color_gradient(low="beige", high="blue")
+```
+
+## Date Format
+Lets update the dates to something more usable so we can evaluate donations against a calendar of specific events, such as state primaries, significant polls and other date based items.
+
+```{r Dates }
+df.data$date <- as.Date(df.data$date, format = "%d-%b-%y"); 
+summary(df.data$date)
+```
+
+# Enhance Data
+
+## Party Affiliation
+One of the questions I'm interested in is how donations to political parties are distributed across the state.  My initial guess is that Metropolitan areas such as Miami, Orlando and Tampa will have higher Democratic or left leaning parties, whereas more rural cities/counties will lean more Republican.   
+
+Due to that, I need to be able to match candidates to their sponsoring party.   Using the FEC website as my source again, I found the Candidate Summary page which list Candidates, their political partys, and importantly their FEC candidate_id which is also is my primary FEC dataset which will make the matchup very easy.
+
+```{r LoadParties, warning=FALSE}
+### Load Party Data
+filename<- "data/CandidateSummaryAction.csv"
+parties<- fread(filename, fill=TRUE, quote="\"", stringsAsFactors = TRUE)
+rm(filename)
+parties<- subset(parties, select = c("can_id", "can_par_aff"))
+names(parties) = c("can_id", "party")
+
+### Merge this into our main data set
+df.data <-merge(df.data, parties, by="can_id", all.x=TRUE, stringsAsFactors = TRUE )
+rm(parties)
+
+## Quick Review
+df.data %>% 
+  group_by(party) %>% 
+  dplyr::summarize(count=length(party)) %>% 
+  arrange(-count)
+
+```
+
+```{r PartyCount_Bar}
+
+ggplot(data=df.data %>% 
+  group_by(party), aes(party,fill=party) ) +
+  geom_bar() + 
+  theme(legend.position="none") +
+  xlab("Party Affiliation") + 
+  ylab("Total Contributions") +
+  labs(
+    title="Contribution by Party")
+
+```
+
+A quick looks shows lots of Democratic donations
+```{r PartyAmount_Col}
+
+ggplot(data=df.data, aes(x=party,y=amount, fill=party) ) +
+  geom_col() + 
+  theme(legend.position="none") +
+  scale_y_continuous(labels = dollar) + 
+  xlab("Party Affiliation") + 
+  ylab("Contribution Totals") +
+  labs(
+    title="Contribution Totals by Party")
+
+```
+
+A further look shows HIGHER Republican donations, interesting.
+
+## County Data
+In order to map the data into something useful on the state level, I'm have aggregated each zip-code into their respective counties, which should make the visual more interesting. 
+
+
+```{r LoadCountyData}
+### Combine and Load Zip Code to County Data 
+## Ref:  https://stackoverflow.com/questions/13316185/r-convert-zipcode-or-lat-long-to-county
+
+## Load the Data form Various packages
+counties<-counties_sf("aeqd")
+counties<-subset(counties,  iso_3166_2 == 'FL')
+counties$county<-as.character(counties$name)
+counties$state<-as.character(counties$iso_3166_2)
+```
+
+
+```{r County_Map}
+plot(subset(counties, select=c("geometry")), main="Counties of Florida")
+```
+Looks like a valid Florida data set to me.
+
+
+```{r CountyMerge}
+
+## Covert it 
+state_fips  = as.numeric(as.character(counties$state_fips))
+county_fips = as.numeric(as.character(counties$county_fips))    
+counties$fips = state_fips*1000+county_fips    
+
+## Combine It
+rd.counties<- merge(counties, zip_codes, by='fips')
+
+## Slim It
+rd.counties <- subset(rd.counties, select=c("fips", "city", "county", 
+                                            "state.y", "zip", "latitude",
+                                            "longitude", "geometry"))
+## Pretty It Up
+names(rd.counties)[4] <- c("state")
+rd.counties$city<- as.factor(rd.counties$city)
+rd.counties$state<- as.factor(rd.counties$state)
+rd.counties$county<- as.factor(rd.counties$county)
+## Clean Up
+rm(zip_codes); rm(counties); rm(state_fips); rm(county_fips);
+
+summary(rd.counties)
+
+df.data<- merge(df.data, rd.counties, by='zip')
+```
+
+
+# Univariate Exploration
+
+Now we have properlty formatted data, lets see what features we ended up with and some stats:
+
+From this summary we can see Hillary Clinton received the most donations, with Miami county being the biggest donating county.  Not suprisingly retired people are more politically active.  Median contribution amount was:  $`r median(df.data$amount)` while the average (mean) amount was higher at $`r round(mean(df.data$amount))`.
+
+```{r MainSummary}
+summary(df.data)
+```
+
+In our plots below, I have plotted the data on a histogram.  We can quickly see a long tail distribution of the data as the summary above suggest with the lower median (red line).   Interestingly we see a few spikes around \$100, \$500, \$1000 and finally at the far right with the maximum of $2700 which all seem like nice rounded off, budgetable numbers.
+
+In the second plot below, With a quick log10 tranformation on the amounts we can see a somewhat normal distribution, but still a great deal below the mean (red line).
+
+```{r Donations_Histogram}
+
+ggplot(data = df.data, aes(x = amount)) +
+  geom_histogram(fill = "green", binwidth = 25) +
+  geom_vline(aes(xintercept=mean(amount, na.rm=T)),color="red", linetype="dashed", size=1) +
+  scale_x_continuous(breaks = round(seq(0, max(df.data$amount), by = 250),0)) +
+  labs(title = "Distribution of Contribution Amounts") 
+```
+
+```{r DontationLog10_Histogram}
+ggplot(data = df.data, aes(x = amount)) +
+  geom_histogram(fill = "green", binwidth=0.1) +
+  geom_vline(aes(xintercept=mean(amount, na.rm=T)),color="red", linetype="dashed", size=1) +
+  scale_x_log10(breaks = c(5, 10, 25, 50, 100, 250, 500, 1000, 2700)) + 
+  labs(title = "Log10 Distribution of Contribution Amounts")
+
+```
+
+To further our analysis, I have broke the donations down by party.   Each historgram shows a single party and their donations.    The title of each is annotated with the party's short indicator, as well as the mean donation amount.   The mean has also been displayed onto the histogram to so that relationship between mean and number of donations can be visualized.   The histograms are ordered smallest to largest by the average donation size.
+
+```{r PartyDonation_Histogram_Facet, message=FALSE, warning=FALSE}
+## Facet details found Here:  https://drsimonj.svbtle.com/ordering-categories-within-ggplot2-facets
+df.datatemp<- df.data %>% 
+  dplyr::group_by(party) %>%
+  dplyr::mutate(med = mean(amount)) %>%
+  dplyr::mutate(party_short = paste(gsub(",.*$", "", party)," -$", round(mean(amount, digits=0))))
+
+df.datatemp$party_f <- factor(df.datatemp$party_short, 
+                              levels = unique(arrange(df.datatemp, med)$party_short))
+
+
+df.datatemp %>% 
+  ggplot(aes(x=amount, color=party) ) +
+  facet_wrap(~ party_f) +
+  geom_histogram() +
+  geom_vline(aes(xintercept = med, group = party_f), colour = 'red') +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme(legend.position="none") +
+  xlab("Amount Per Donation") + 
+  ylab("Number of Donations") +  
+  labs(
+    title="Contribution per Party",
+    caption="Heading = (Party Name) - $(Mean Donation)")
+rm(df.datatemp)
+```
+
+Taking the breakdown one step further, can present the same data at the Candidate level with the headings now showing the Candidate's last name and mean donation.   All candidates of the same party are colored the same to assist with visual evaluation.
+
+```{r CandidateDonation_Histogram_Facet, message=FALSE, warning=FALSE}
+
+df.datatemp<- df.data %>% 
+  dplyr::group_by(candidate) %>%
+  dplyr::mutate(med = mean(amount)) %>%
+  dplyr::mutate(len = length(candidate)) %>%
+  dplyr::mutate(candidate_short = paste(gsub(",.*$", "", candidate)," -$", round(mean(amount, digits=0))))
+
+df.datatemp$candidate_f <- factor(df.datatemp$candidate_short, levels = unique(arrange(df.datatemp, med)$candidate_short))
+
+
+df.datatemp %>% 
+  ggplot(aes(x=amount, color=party) ) +
+  facet_wrap(~ candidate_f) +
+  geom_histogram() +
+  geom_vline(aes(xintercept = med, group = candidate_f), colour = 'red') +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme(legend.position="none") +
+  xlab("Amount Per Donation") + 
+  ylab("Number of Donations") +
+  labs(
+    title="Contribution per Candidate",
+    caption="Heading = (Candidate Name) - $(Mean Donation)")
+rm(df.datatemp)
+
+
+```
+
+## Over Time
+
+```{r PartyDonation_Cumulative_Line, message=FALSE, warning=FALSE}
+
+df.datatemp = data.frame(dates=as.Date(as.character()), party=as.character(), amount=as.numeric())
+for(grp in unique(df.data$party)){
+   subs = filter(df.data, party == grp) %>% arrange(date)
+   df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
+                               party=grp, 
+                               amount=subs$amount,
+                               cs=cumsum(subs$amount)))
+   rm(subs)
+ }
+
+### Plot It 
+ggplot() + 
+  geom_line(data = df.datatemp,
+          aes(y = cs, x = dates, colour = party)) +
+  scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
+               limits = as.Date(c('2015-01-01','2017-01-01'))) +
+  scale_y_continuous(labels = dollar) + 
+  theme_bw()
+
+rm(df.datatemp)
+
+```
+
+Using this line chart based on party fund raising by date we see the Republicans clearly out-raised the Democrats from very early in the race. The numbers for the Democrats and Republicans are so large, they eclipes all other parties.   Since the fund raising started so early with no visual benefit, I trimmed the plot down to just the final two years of the campaign.
+
+```{r CandidateDonation_Cumulative_Line, message=FALSE, warning=FALSE}
+
+df.datatemp = data.frame(dates=as.Date(as.character()), candidate=as.character(), amount=as.numeric())
+for(grp in unique(df.data$candidate)){
+   subs = filter(df.data, candidate == grp) %>% arrange(date)
+   df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
+                               candidate=grp, 
+                               amount=subs$amount,
+                               cs=cumsum(subs$amount)))
+ }
+
+### Plot It 
+ggplot() + 
+  geom_line(data = df.datatemp,
+          aes(y = cs, x = dates, colour = candidate)) +
+  scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
+               limits = as.Date(c('2015-01-01','2017-01-01'))) +
+  scale_y_continuous(labels = dollar) + 
+  theme_bw()
+
+rm(df.datatemp)
+
+```
+
+This isn't super useful as it has TOO much information, I'm going to reduce down the field of candidates to only the TOP 10 fundraisers and move the legend out of the way.
+
+```{r Top10CandidateDonation_Cumulative_Line, message=FALSE, warning=FALSE}
+
+top10<-df.data %>%
+  dplyr::group_by(candidate) %>%
+  dplyr::summarise(sum=sum(amount)) %>%
+  arrange(sum) %>%
+  top_n(n = 10, wt = sum)
+
+
+df.datatemp = data.frame(dates=as.Date(as.character()), candidate=as.character(), amount=as.numeric())
+for(grp in unique(df.data$candidate)){
+   subs = filter(df.data, candidate == grp) %>% arrange(date)
+   df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
+                               candidate=grp, 
+                               amount=subs$amount,
+                               cs=cumsum(subs$amount)))
+ }
+
+df.datatemp<-subset(df.datatemp, (candidate %in% top10$candidate))
+
+### Plot It 
+ggplot() + 
+  geom_line(data = df.datatemp,
+          aes(y = cs, x = dates, colour = candidate)) +
+  scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
+               limits = as.Date(c('2015-01-01','2017-01-01'))) +
+  scale_y_continuous(labels = dollar) + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title=element_blank()) 
+
+rm(df.datatemp)
+rm(top10)
+```
+
+Breaking it down into individual candidates, we can see that, while Clinton soared in individual fundraising, a good number of the Republican candidates did quite well, contributing to the party's over all fund raising numbers. I think this is interesting to show how roll-up data can hide important details like this.
+
+
+```{r Top10CandidateDonation_Cumulative_Line_Annotated, message=FALSE, warning=FALSE}
+
+top10<-df.data %>%
+  dplyr::group_by(candidate) %>%
+  dplyr::summarise(sum=sum(amount)) %>%
+  arrange(sum) %>%
+  top_n(n = 10, wt = sum)
+
+
+df.datatemp = data.frame(dates=as.Date(as.character()), candidate=as.character(), amount=as.numeric())
+for(grp in unique(df.data$candidate)){
+   subs = filter(df.data, candidate == grp) %>% arrange(date)
+   df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
+                               candidate=grp, 
+                               amount=subs$amount,
+                               cs=cumsum(subs$amount)))
+ }
+
+df.datatemp<-subset(df.datatemp, (candidate %in% top10$candidate))
+
+### Plot It 
+ggplot() + 
+  geom_line(data = df.datatemp,
+          aes(y = cs, x = dates, colour = candidate)) +
+  scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
+               limits = as.Date(c('2015-01-01','2017-01-01'))) +
+  scale_y_continuous(labels = dollar) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-11-08")), linetype=4, color="red") +  ## Election Day 
+    geom_text(aes(x=as.Date("2016-11-08"), label="\nElection Day", y=(max(df.datatemp$cs))*.8), colour="red", angle=90) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-07-18")), linetype=4, color="red") +  ## Rep Convention
+    geom_text(aes(x=as.Date("2016-07-18"), label="Dem Convention\n", y=(max(df.datatemp$cs))*.8), colour="red", angle=90) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-07-25")), linetype=4, color="blue") +  ## Dem Convention
+    geom_text(aes(x=as.Date("2016-07-25"), label="\nRep Convention", y=(max(df.datatemp$cs))*.8), colour="blue", angle=90) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-03-01")), linetype=4, color="black") +  ## SUper Tuesday
+    geom_text(aes(x=as.Date("2016-03-01"), label="\nSuper Tuesday", y=(max(df.datatemp$cs))*.8), colour="black", angle=90) + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title=element_blank()) 
+rm(df.datatemp)
+rm(top10)
+```
+Adding more context clues, this graph becomes a bit more useful to understand the timelines.  We can see a few candidates drop off after Super Tuesday, and for the most part, all others fall off after their respective Parties Convention.    
+
+
+# Bi and Multivariate Analysis
+
+Lets use the hetcor package and produce a Pearson correlation matrix to see if it can give us any insight about correlations we should to start plotting.
+
+```{r CorrelationLook, warning=FALSE}
+df.tempdata = subset(df.data, select = c("candidate", "amount", "date", "party", "county" ))
+df.tempdata$date<-as.factor(df.tempdata$date)
+hetcor(df.tempdata, std.err = FALSE)
+rm(df.tempdata)
+```
+
+Party, amount, and date are the only variables that have a correlation coefficient above 0.10 that would suggest any type of correlation.  I'm a bit surprised that county to party is not more correlated.  
+
+```{r MonthYear_Donations}
+
+ggplot(data = df.data, 
+       aes(x = month(df.data$date),
+           fill = as.factor(year(df.data$date)))) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_x_discrete(name = "Months",
+                   limits = 1:12,
+                   labels = c("Jan", "Feb", "Mar", 
+                                   "Apr", "May", "Jun", 
+                                   "Jul", "Aug", "Sep",
+                                   "Oct", "Nov", "Dec")) +
+theme(legend.position = "bottom", 
+      legend.title=element_blank())
+```
+
+Looking at donation counts over the months by year we can see noticeable amounts of donations starting rolling in April of 2015 with 2016 having the majority of donations.
+
+```{r MonthYear_Box}
+
+ggplot(data = df.data,
+       aes(y = amount, x = as.factor(year(df.data$date)),
+           fill = as.factor(year(df.data$date))))  + 
+  geom_boxplot(outlier.color = NA) + 
+  coord_cartesian(ylim = c(0, 700)) +
+  stat_summary(fun.y = mean, geom = "point", size = 3, color="red") +
+  theme(legend.position = "bottom",
+        legend.title=element_blank()) + 
+  xlab(label ="Year")
+```
+
+Here we can see the mean (red dots) varying high during the early years of the election cycle which makes sense as candidate will likely get large personal donations from friends, families and insiders first before hitting the campaign trail which would start to roll in the smaller personal dontations, which also explains the size of the 2016 box as the donations are concentrated in a much more compact range.
+
+```{r PartyAmount_Box, warning=FALSE}
+
+  ggplot(data = df.data, 
+         aes(x = party, y = amount,  
+        fill = as.factor(df.data$party)))  + 
+  geom_boxplot(outlier.color = NA) +
+  scale_y_continuous(lim=c(0,500))
+```
+
+
+
+```{r PartyMean}
+df.data %>%
+  group_by(party) %>%
+  dplyr::summarise(mean = mean(amount),
+            median = median(amount),
+            n = n()) %>%
+arrange(-mean)
+```
+
+This box plot and graph simply show us what we found earlier in the Histograms that Democrats have lower donation amounts from greater number of donors, whereas Republicans have higher mean donations from fewer donors, nothing too interesting.
+
+
+## Metro versus Rural
+
+I'm curious to see how donors differ from different parts of the states.   I spent way too much time figuring out this visual, but it does a good job of showing where various party donations come from.
+
+```{r GenerateMapData, include=TRUE, message=FALSE, warning=FALSE  }
+
+df.geometry = unique(subset(rd.counties, select=c("city","geometry","latitude","longitude")))
+
+map<-get_googlemap(center = c(lon = -83.24948, lat = 27.93592), 
+                   size = c(640,640),
+                   zoom = 7, scale = 1,  maptype = "terrain")
+
+
+filter_map_data<- function(data){
+  agg_merged<-aggregate(data, list(city = data$city, party = data$party), length)[1:3]
+  names(agg_merged)[1:3]<-c('city', 'party', 'count')
+  
+  ### Add Back Geometry 
+  agg_merged<-merge(df.geometry, agg_merged, by="city", all.x=TRUE ) 
+  agg_merged$count[is.na(agg_merged$count)]<-0
+  return(agg_merged)
+}
+
+map.data<-filter_map_data(df.data)
+```
+
+```{r MapDensity, include=TRUE, message=FALSE, warning=FALSE  }
+## Density Map
+show_density_map<- function(title) {
+  return(
+    ggmap(map) +   
+      geom_density2d(data = map.data, 
+      aes(x = longitude, y = latitude), size = 0.25) + 
+      stat_density2d(data = map.data, 
+        aes(x = longitude, y = latitude, fill = ..level.., alpha = ..level..), 
+        size = 0.1, 
+        bins = 10, geom = "polygon")  +
+      scale_fill_viridis(option = "B",direction=-1, name=title) + 
+      scale_color_viridis(option = "B",direction=-1, name=title) +
+      labs(title = title)  
+    ) 
+}
+show_density_map("Map")
+
+```
+This map does a good job of showing distribution but not comparison to others.  Lets try it a different way.
+
+
+
+```{r MapDScatter, include=TRUE, message=FALSE, warning=FALSE  }
+## Scatter Plot of Donors by Zip  
+show_scatter_map<- function(title)
+{
+names(map.data)[2:3] = c("lat", "lon")
+  return(
+    ggmap(map) + 
+    annotate("text", x = -85, y = 25.7, label = "State of Florida") + 
+    geom_point(data = map.data, aes(
+                                    size = count,
+                                    colour = factor(party)), 
+               alpha = 1) + 
+    labs(title = title)  +
+    scale_size(name="Num of Donors") +
+    scale_color_discrete(name="Parties")
+  )
+}
+
+show_scatter_map("Donor Distribution by Party")
+ 
+
+
+```
+
+Looking at this, we can see that my hunch was pretty accurate.  Most metropolitan areas are covered with Democratic donations as well as military towns Pensacola, Eglin Air Force Base and Jacksonville.   The majority of the blue markers show up in more rural areas, or the more expensive retirement areas around Ft. Lauderdale.  
+
+```{r MapData}
+map.data %>%
+  group_by(city, party) %>%
+  dplyr::summarize(donors = sum(count)) %>%
+  arrange(-donors)
+
+rm(map.data)
+
+```
+
+And the numbers pretty much confirm the visual.  Knowing about the various areas of the state these numbers are not surprising.
+
+
+# Final Plots and Summary
+
+Of all the plots included in this analysis.  I found these to be the most interesting.
+
+## Plot One
+```{r PlotOne, include=TRUE, message=FALSE, warning=FALSE}
+
+map.data<-filter_map_data(df.data)
+show_scatter_map("Donor Distribution by Party")
+rm(df.geometry)
+```
+### Plot One Description
+
+This plot show the number of donors across the state. We see stronger support of Democratic candidate towards the larger metropolian areas, where as areas with high retirees and rural indivdiauls can be seen supporting the Republican party.
+
+## PLot Two
+```{r PlotTwo, message=FALSE, warning=FALSE}
+
+df.datatemp<- df.data %>% 
+  group_by(candidate) %>%
+  mutate(med = mean(amount)) %>%
+  mutate(len = length(candidate)) %>%
+  mutate(candidate_short = paste(gsub(",.*$", "", candidate)," -$", round(mean(amount, digits=0))))
+
+df.datatemp$candidate_f <- factor(df.datatemp$candidate_short, levels = unique(arrange(df.datatemp, med)$candidate_short))
+
+
+df.datatemp %>% 
+  ggplot(aes(x=amount, color=party) ) +
+  facet_wrap(~ candidate_f) +
+  geom_histogram() +
+  geom_vline(aes(xintercept = med, group = candidate_f), colour = 'red') +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme(legend.position="none") +
+  xlab("Amount Per Donation") + 
+  ylab("Number of Donations") +
+  labs(
+    title="Contribution per Candidate",
+    caption="Heading = (Candidate Name) - $(Mean Donation)")
+rm(df.datatemp)
+
+
+```
+
+### Plot Two Description
+I find multi-faceted plots to be visaully appealing yet very informative.  With this plot we can quickly see which party a candidate is with simply by its color, the candidates mean donation by the red line, and the over all distribution of donation amounts by the underlying histogram.    With this layout we can easily get an idea of which economical section of society supported each candidate.   
+
+## Plot Three 
+```{r PlotThree, warning=FALSE}
+
+  ggplot(data = df.data, 
+         aes(x = party, y = amount,  
+        fill = as.factor(df.data$party)))  + 
+  geom_boxplot(outlier.color = NA) +
+  scale_y_continuous(lim=c(0,500)) + 
+  theme(legend.position="none") +
+  xlab("Party Affiliation") + 
+  ylab("Amount Per Donation") +
+  labs(
+    title="Contribution Averages by Party")
+
+```
+
+### Plot Three Description
+This third plot shows a representative of the donors per party by the average and quartiles of their donations.   Comparing Democrat and Republicans we see that the upper range of the Republicans is more than double of that of the Democrats.
+
+# Reflections 
+
+During the initial phases of this exploration I had issues loading the data and spent quite a bit of time figuring our the data format.   Having originally fixed the issue in an external program, I later came back and figured out the R base fix for the problem, which is included in this analysis. I had the most frustration with the Map based plot.   Originally I used another package that had county shapes, which I could fill with color based on number of donors, but I wouldn't be able to easily show counties that had a mix of parties, which lead me to the map based solution above an actual map and coordinates of each city.    
+
+Working with the data for each plot provided many opportunitis to understand how the data is laid out and used inside a R data frame, which did a great job of furthering my understanding of the various packages available for data explordation.
+
+In searching for problems with this data I found others doing similar comparision where they enriched the data with County population data, gender data (based off donor's first name), and even one with employer data based on employer name, all of those additional data points could be used for a much more in-depth exploration.
+
+Based on my exploration, some time could be spent to attempt to correlate the refunds to original donations to make the data cleaner and more representative.   I could be interesting, but I have a hunch it wouldn't be that surprising, to correlate donation amount by City to understand how donation amounts vary per the different areas of the states.
+
+

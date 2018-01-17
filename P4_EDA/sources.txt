@@ -1,0 +1,6 @@
+### Sources 
+
+https://drsimonj.svbtle.com/ordering-categories-within-ggplot2-facets
+https://stackoverflow.com/questions/13316185/r-convert-zipcode-or-lat-long-to-county
+http://www.zipcodestogo.com/Florida/
+https://github.com/winkelman/udacity-dand-eda/blob/master/project.Rmd

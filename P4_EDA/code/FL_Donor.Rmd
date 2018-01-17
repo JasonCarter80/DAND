@@ -4,7 +4,7 @@ title:  |
   | from State of Florida\n
 author: "Jason Carter"
 date: "3 Janaury 2018"
-knit: (function(inputFile, encoding) { out_dir <- '../docs'; rmarkdown::render(inputFile, encoding=encoding, output_file=file.path(dirname(inputFile), out_dir, 'index.html')) })
+knit: (function(inputFile, encoding) { out_dir <- '../docs'; rmarkdown::render(inputFile, encoding=encoding,output_file=file.path(dirname(inputFile), out_dir, 'P4_EDA.html')) })
 output: 
   html_document: 
     css: "../docs/markdown.css"
@@ -12,6 +12,7 @@ output:
     keep_md: yes
     toc: yes
     toc_depth: 1
+    smart: false
   md_document:
     variant: markdown_github
 editor_options: 
@@ -37,7 +38,9 @@ if(!require(ggplot2)){
   
   devtools::install_github("tidyverse/rlang")
   devtools::install_github("tidyverse/ggplot2")
+  devtools::install_github("rstudio/rmarkdown")
   library(ggplot2)
+  library(rmarkdown)
 }
 
 ### Use PacMan to Install and Load Required Packages
@@ -58,16 +61,24 @@ The data is provided in a ZIPPED, CSV file.   The CSV layout is provided by the 
 
 ```{r DataLoad, include=TRUE}
 filename<- "data/P00000001-FL.csv"
-header <- read.csv(filename, header = FALSE, stringsAsFactors = FALSE, nrows = 1)
+header <- read.csv(filename, 
+                   header = FALSE, 
+                   stringsAsFactors = FALSE, 
+                   nrows = 1)
 column_names <- unname(unlist(header))
-body <- read.csv(filename, header = FALSE, skip = 1, nrows=2000)
+body <- read.csv(filename, 
+                 header = FALSE, 
+                 skip = 1, 
+                 nrows=2000)
 body <- body[, 1:length(body)-1]
 names(body) <- column_names
 rm(body); rm(header)
 
 column_names <- c(column_names, "dummy")
 df.Export <- read.csv(filename,
-                     header = FALSE, col.names = column_names, skip = 1)
+                     header = FALSE, 
+                     col.names = column_names, 
+                     skip = 1)
 df.Export$dummy <- NULL
 
 rm(column_names)
@@ -88,9 +99,11 @@ This is a relatively large data set, and there are many fields that we just don'
 
 ```{r DataTrim, echo=TRUE}
 #### Get just what we want
-df.data <- subset(df.Export, select=c("cand_id", "cand_nm", "contbr_nm","contbr_zip", 
-                                        "contbr_employer", "contbr_occupation",
-                                        "contb_receipt_amt", "contb_receipt_dt"))
+df.data <- subset(df.Export, 
+                  select=c("cand_id", "cand_nm", "contbr_nm",
+                           "contbr_zip", "contbr_employer", 
+                           "contbr_occupation","contb_receipt_amt", 
+                           "contb_receipt_dt"))
 
 #### Friendly Name Them 
 names(df.data) <- c("can_id", "candidate", "name", "zip",
@@ -103,11 +116,12 @@ summary(df.data)
 ## Donation Amounts
 Looking at the summary I see the max is \$20,000 which is above the FEC max of $2700, and the minimum is negative at -\$20,000.  Lets look at it.
 
-```{r DonationAmounts_Box_Fixed}
+```{r DonationAmounts_Box}
 ggplot(data = df.data, 
        aes(x= "Contribusions", y=amount)) +
   geom_boxplot() +
-  labs(title="All Contributions") 
+  labs(title="All Contributions") +
+  ylab("Amount ($)")
 
 ```
 
@@ -123,7 +137,8 @@ rm(excludes)
 ```{r DonationAmounts_BoxFixed}
 ggplot(data = df.data, aes(x= "Contribusions", y=amount)) +
   geom_boxplot() +
-  labs(title="Valid Contributions") 
+  labs(title="Valid Contributions") +
+  ylab("Amount ($)")
 
 ```
 
@@ -147,7 +162,8 @@ data(zip_codes)
 map<-get_map(location='united states', zoom=4, maptype = "terrain",
              source='google',color='color')
 
-map.data<-unique(subset(inner_join(df.data, zip_codes, "zip"), select=c("longitude", "latitude")))
+map.data<-unique(subset(inner_join(df.data, zip_codes, "zip"), 
+                        select=c("longitude", "latitude")))
 
 ggmap(map) + 
   geom_point(
@@ -165,7 +181,8 @@ Some of those donations could likely be by members of the armed services or simp
 ## Checkout Odd Zip Codes
 removed_zips<-subset(df.data, df.data$zip < 32000 | df.data$zip > 34999)
 ##removed_zips$zip<- as.factor(removed_zips$zip)  ### Not Sure why?
-removed_subset<-subset(inner_join(removed_zips, zip_codes, by="zip"), select=c("city", "state"))
+removed_subset<-subset(inner_join(removed_zips, zip_codes, by="zip"), 
+                       select=c("city", "state"))
 
 ## Quick Review
 removed_subset %>% 
@@ -184,7 +201,8 @@ df.data$zip[df.data$zip < 32000 | df.data$zip > 34999] <- NA
 ```
 
 ```{r ZipCode_Map_Fixed, warning=FALSE}
-map.data<-unique(subset(inner_join(df.data, zip_codes, "zip"), select=c("longitude", "latitude")))
+map.data<-unique(subset(inner_join(df.data, zip_codes, "zip"), 
+                        select=c("longitude", "latitude")))
 
 ggmap(map) + 
   geom_point(
@@ -218,7 +236,8 @@ parties<- subset(parties, select = c("can_id", "can_par_aff"))
 names(parties) = c("can_id", "party")
 
 ### Merge this into our main data set
-df.data <-merge(df.data, parties, by="can_id", all.x=TRUE, stringsAsFactors = TRUE )
+df.data <-merge(df.data, parties, by="can_id", all.x=TRUE, 
+                stringsAsFactors = TRUE )
 rm(parties)
 
 ## Quick Review
@@ -236,9 +255,9 @@ ggplot(data=df.data %>%
   geom_bar() + 
   theme(legend.position="none") +
   xlab("Party Affiliation") + 
-  ylab("Total Contributions") +
+  ylab("Total Contributors") +
   labs(
-    title="Contribution by Party")
+    title="Contributors (Non Distinct) by Party")
 
 ```
 
@@ -250,7 +269,7 @@ ggplot(data=df.data, aes(x=party,y=amount, fill=party) ) +
   theme(legend.position="none") +
   scale_y_continuous(labels = dollar) + 
   xlab("Party Affiliation") + 
-  ylab("Contribution Totals") +
+  ylab("Contribution Totals ($)") +
   labs(
     title="Contribution Totals by Party")
 
@@ -277,6 +296,7 @@ counties$state<-as.character(counties$iso_3166_2)
 ```{r County_Map}
 plot(subset(counties, select=c("geometry")), main="Counties of Florida")
 ```
+
 Looks like a valid Florida data set to me.
 
 
@@ -326,17 +346,22 @@ In the second plot below, With a quick log10 tranformation on the amounts we can
 
 ggplot(data = df.data, aes(x = amount)) +
   geom_histogram(fill = "green", binwidth = 25) +
-  geom_vline(aes(xintercept=mean(amount, na.rm=T)),color="red", linetype="dashed", size=1) +
-  scale_x_continuous(breaks = round(seq(0, max(df.data$amount), by = 250),0)) +
-  labs(title = "Distribution of Contribution Amounts") 
+  geom_vline(aes(xintercept=mean(amount, na.rm=T)),
+             color="red", linetype="dashed", size=1) +
+  scale_x_continuous(breaks = round(seq(0, max(df.data$amount), 
+                                        by = 250),0)) +
+  labs(title = "Distribution of Contribution Amounts") +
+  xlab("Amount ($)")
 ```
 
 ```{r DontationLog10_Histogram}
 ggplot(data = df.data, aes(x = amount)) +
   geom_histogram(fill = "green", binwidth=0.1) +
-  geom_vline(aes(xintercept=mean(amount, na.rm=T)),color="red", linetype="dashed", size=1) +
+  geom_vline(aes(xintercept=mean(amount, na.rm=T)),
+             color="red", linetype="dashed", size=1) +
   scale_x_log10(breaks = c(5, 10, 25, 50, 100, 250, 500, 1000, 2700)) + 
-  labs(title = "Log10 Distribution of Contribution Amounts")
+  labs(title = "Log10 Distribution of Contribution Amounts") + 
+  xlab("Amount ($)")
 
 ```
 
@@ -347,10 +372,12 @@ To further our analysis, I have broke the donations down by party.   Each histor
 df.datatemp<- df.data %>% 
   dplyr::group_by(party) %>%
   dplyr::mutate(med = mean(amount)) %>%
-  dplyr::mutate(party_short = paste(gsub(",.*$", "", party)," -$", round(mean(amount, digits=0))))
+  dplyr::mutate(party_short = paste(party," $", 
+                                    round(mean(amount, digits=0))))
 
 df.datatemp$party_f <- factor(df.datatemp$party_short, 
-                              levels = unique(arrange(df.datatemp, med)$party_short))
+                              levels = unique(arrange(df.datatemp, 
+                                                      med)$party_short))
 
 
 df.datatemp %>% 
@@ -358,14 +385,14 @@ df.datatemp %>%
   facet_wrap(~ party_f) +
   geom_histogram() +
   geom_vline(aes(xintercept = med, group = party_f), colour = 'red') +
-  scale_x_log10() +
+  scale_x_log10(labels = dollar) +
   scale_y_log10() +
   theme(legend.position="none") +
-  xlab("Amount Per Donation") + 
+  xlab("Amount Per Donation ($)") + 
   ylab("Number of Donations") +  
   labs(
     title="Contribution per Party",
-    caption="Heading = (Party Name) - $(Mean Donation)")
+    caption="Heading = (Party Name) $(Mean Donation)")
 rm(df.datatemp)
 ```
 
@@ -377,9 +404,12 @@ df.datatemp<- df.data %>%
   dplyr::group_by(candidate) %>%
   dplyr::mutate(med = mean(amount)) %>%
   dplyr::mutate(len = length(candidate)) %>%
-  dplyr::mutate(candidate_short = paste(gsub(",.*$", "", candidate)," -$", round(mean(amount, digits=0))))
+  dplyr::mutate(candidate_short = paste(gsub(",.*$", "", candidate)," $", 
+                                        round(mean(amount, digits=0))))
 
-df.datatemp$candidate_f <- factor(df.datatemp$candidate_short, levels = unique(arrange(df.datatemp, med)$candidate_short))
+df.datatemp$candidate_f <- factor(df.datatemp$candidate_short, 
+                                  levels = unique(arrange(df.datatemp, 
+                                                          med)$candidate_short))
 
 
 df.datatemp %>% 
@@ -387,14 +417,14 @@ df.datatemp %>%
   facet_wrap(~ candidate_f) +
   geom_histogram() +
   geom_vline(aes(xintercept = med, group = candidate_f), colour = 'red') +
-  scale_x_log10() +
+  scale_x_log10(label=dollar) +
   scale_y_log10() +
   theme(legend.position="none") +
-  xlab("Amount Per Donation") + 
+  xlab("Amount Per Donation ($)") + 
   ylab("Number of Donations") +
   labs(
-    title="Contribution per Candidate",
-    caption="Heading = (Candidate Name) - $(Mean Donation)")
+    title="Contribution per Candidate (Logt10 Scaled)",
+    caption="Heading = (Candidate Name) $(Mean Donation)")
 rm(df.datatemp)
 
 
@@ -404,7 +434,9 @@ rm(df.datatemp)
 
 ```{r PartyDonation_Cumulative_Line, message=FALSE, warning=FALSE}
 
-df.datatemp = data.frame(dates=as.Date(as.character()), party=as.character(), amount=as.numeric())
+df.datatemp = data.frame(dates=as.Date(as.character()), 
+                         party=as.character(), 
+                         amount=as.numeric())
 for(grp in unique(df.data$party)){
    subs = filter(df.data, party == grp) %>% arrange(date)
    df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
@@ -421,6 +453,7 @@ ggplot() +
   scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
                limits = as.Date(c('2015-01-01','2017-01-01'))) +
   scale_y_continuous(labels = dollar) + 
+  ylab("Contribution Total ($)") +
   theme_bw()
 
 rm(df.datatemp)
@@ -431,7 +464,8 @@ Using this line chart based on party fund raising by date we see the Republicans
 
 ```{r CandidateDonation_Cumulative_Line, message=FALSE, warning=FALSE}
 
-df.datatemp = data.frame(dates=as.Date(as.character()), candidate=as.character(), amount=as.numeric())
+df.datatemp = data.frame(dates=as.Date(as.character()), 
+                         candidate=as.character(), amount=as.numeric())
 for(grp in unique(df.data$candidate)){
    subs = filter(df.data, candidate == grp) %>% arrange(date)
    df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
@@ -447,6 +481,7 @@ ggplot() +
   scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
                limits = as.Date(c('2015-01-01','2017-01-01'))) +
   scale_y_continuous(labels = dollar) + 
+  ylab("Contribution Total ($)") +
   theme_bw()
 
 rm(df.datatemp)
@@ -464,7 +499,8 @@ top10<-df.data %>%
   top_n(n = 10, wt = sum)
 
 
-df.datatemp = data.frame(dates=as.Date(as.character()), candidate=as.character(), amount=as.numeric())
+df.datatemp = data.frame(dates=as.Date(as.character()), 
+                         candidate=as.character(), amount=as.numeric())
 for(grp in unique(df.data$candidate)){
    subs = filter(df.data, candidate == grp) %>% arrange(date)
    df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
@@ -482,6 +518,7 @@ ggplot() +
   scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
                limits = as.Date(c('2015-01-01','2017-01-01'))) +
   scale_y_continuous(labels = dollar) + 
+  ylab("Contribution Total ($)") + 
   theme_bw() + 
   theme(legend.position = "bottom",
         legend.title=element_blank()) 
@@ -502,7 +539,8 @@ top10<-df.data %>%
   top_n(n = 10, wt = sum)
 
 
-df.datatemp = data.frame(dates=as.Date(as.character()), candidate=as.character(), amount=as.numeric())
+df.datatemp = data.frame(dates=as.Date(as.character()), 
+                         candidate=as.character(), amount=as.numeric())
 for(grp in unique(df.data$candidate)){
    subs = filter(df.data, candidate == grp) %>% arrange(date)
    df.datatemp = rbind(df.datatemp, data.frame(dates=subs$date, 
@@ -520,20 +558,31 @@ ggplot() +
   scale_x_date(date_breaks = "6 months", date_labels = "%m-%Y",
                limits = as.Date(c('2015-01-01','2017-01-01'))) +
   scale_y_continuous(labels = dollar) + 
-  geom_vline(xintercept = as.numeric(as.Date("2016-11-08")), linetype=4, color="red") +  ## Election Day 
-    geom_text(aes(x=as.Date("2016-11-08"), label="\nElection Day", y=(max(df.datatemp$cs))*.8), colour="red", angle=90) + 
-  geom_vline(xintercept = as.numeric(as.Date("2016-07-18")), linetype=4, color="red") +  ## Rep Convention
-    geom_text(aes(x=as.Date("2016-07-18"), label="Dem Convention\n", y=(max(df.datatemp$cs))*.8), colour="red", angle=90) + 
-  geom_vline(xintercept = as.numeric(as.Date("2016-07-25")), linetype=4, color="blue") +  ## Dem Convention
-    geom_text(aes(x=as.Date("2016-07-25"), label="\nRep Convention", y=(max(df.datatemp$cs))*.8), colour="blue", angle=90) + 
-  geom_vline(xintercept = as.numeric(as.Date("2016-03-01")), linetype=4, color="black") +  ## SUper Tuesday
-    geom_text(aes(x=as.Date("2016-03-01"), label="\nSuper Tuesday", y=(max(df.datatemp$cs))*.8), colour="black", angle=90) + 
+  ylab("Contribution Total ($)") +
+  geom_vline(xintercept = as.numeric(as.Date("2016-11-08")), 
+             linetype=4, color="red") +  ## Election Day 
+    geom_text(aes(x=as.Date("2016-11-08"), label="\nElection Day", 
+                  y=(max(df.datatemp$cs))*.8), colour="red", angle=90) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-07-18")), 
+             linetype=4, color="red") +  ## Rep Convention
+    geom_text(aes(x=as.Date("2016-07-18"), label="Dem Convention\n", 
+                  y=(max(df.datatemp$cs))*.8), colour="red", angle=90) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-07-25")), 
+             linetype=4, color="blue") +  ## Dem Convention
+    geom_text(aes(x=as.Date("2016-07-25"), label="\nRep Convention", 
+                  y=(max(df.datatemp$cs))*.8), colour="blue", angle=90) + 
+  geom_vline(xintercept = as.numeric(as.Date("2016-03-01")), 
+             linetype=4, color="black") +  ## SUper Tuesday
+    geom_text(aes(x=as.Date("2016-03-01"), label="\nSuper Tuesday", 
+                  y=(max(df.datatemp$cs))*.8), colour="black", angle=90) + 
+  
   theme_bw() + 
   theme(legend.position = "bottom",
         legend.title=element_blank()) 
 rm(df.datatemp)
 rm(top10)
 ```
+
 Adding more context clues, this graph becomes a bit more useful to understand the timelines.  We can see a few candidates drop off after Super Tuesday, and for the most part, all others fall off after their respective Parties Convention.    
 
 
@@ -542,7 +591,9 @@ Adding more context clues, this graph becomes a bit more useful to understand th
 Lets use the hetcor package and produce a Pearson correlation matrix to see if it can give us any insight about correlations we should to start plotting.
 
 ```{r CorrelationLook, warning=FALSE}
-df.tempdata = subset(df.data, select = c("candidate", "amount", "date", "party", "county" ))
+df.tempdata = subset(df.data, 
+                     select = c("candidate", "amount", "date", 
+                                "party", "county" ))
 df.tempdata$date<-as.factor(df.tempdata$date)
 hetcor(df.tempdata, std.err = FALSE)
 rm(df.tempdata)
@@ -578,7 +629,8 @@ ggplot(data = df.data,
   stat_summary(fun.y = mean, geom = "point", size = 3, color="red") +
   theme(legend.position = "bottom",
         legend.title=element_blank()) + 
-  xlab(label ="Year")
+  xlab(label ="Year") +
+  ylab("Contribution Amount ($)")
 ```
 
 Here we can see the mean (red dots) varying high during the early years of the election cycle which makes sense as candidate will likely get large personal donations from friends, families and insiders first before hitting the campaign trail which would start to roll in the smaller personal dontations, which also explains the size of the 2016 box as the donations are concentrated in a much more compact range.
@@ -589,7 +641,8 @@ Here we can see the mean (red dots) varying high during the early years of the e
          aes(x = party, y = amount,  
         fill = as.factor(df.data$party)))  + 
   geom_boxplot(outlier.color = NA) +
-  scale_y_continuous(lim=c(0,500))
+  scale_y_continuous(lim=c(0,500)) +
+  ylab("Contribution Amount ($)")
 ```
 
 
@@ -612,7 +665,9 @@ I'm curious to see how donors differ from different parts of the states.   I spe
 
 ```{r GenerateMapData, include=TRUE, message=FALSE, warning=FALSE  }
 
-df.geometry = unique(subset(rd.counties, select=c("city","geometry","latitude","longitude")))
+df.geometry = unique(subset(rd.counties, 
+                            select=c("city","geometry",
+                                     "latitude","longitude")))
 
 map<-get_googlemap(center = c(lon = -83.24948, lat = 27.93592), 
                    size = c(640,640),
@@ -620,7 +675,9 @@ map<-get_googlemap(center = c(lon = -83.24948, lat = 27.93592),
 
 
 filter_map_data<- function(data){
-  agg_merged<-aggregate(data, list(city = data$city, party = data$party), length)[1:3]
+  agg_merged<-aggregate(data, 
+                        list(city = data$city, party = data$party), 
+                        length)[1:3]
   names(agg_merged)[1:3]<-c('city', 'party', 'count')
   
   ### Add Back Geometry 
@@ -651,6 +708,7 @@ show_density_map<- function(title) {
 show_density_map("Map")
 
 ```
+
 This map does a good job of showing distribution but not comparison to others.  Lets try it a different way.
 
 
@@ -705,20 +763,25 @@ map.data<-filter_map_data(df.data)
 show_scatter_map("Donor Distribution by Party")
 rm(df.geometry)
 ```
+
 ### Plot One Description
 
 This plot show the number of donors across the state. We see stronger support of Democratic candidate towards the larger metropolian areas, where as areas with high retirees and rural indivdiauls can be seen supporting the Republican party.
 
-## PLot Two
+## Plot Two
 ```{r PlotTwo, message=FALSE, warning=FALSE}
 
-df.datatemp<- df.data %>% 
-  group_by(candidate) %>%
-  mutate(med = mean(amount)) %>%
-  mutate(len = length(candidate)) %>%
-  mutate(candidate_short = paste(gsub(",.*$", "", candidate)," -$", round(mean(amount, digits=0))))
 
-df.datatemp$candidate_f <- factor(df.datatemp$candidate_short, levels = unique(arrange(df.datatemp, med)$candidate_short))
+df.datatemp<- df.data %>% 
+  dplyr::group_by(candidate) %>%
+  dplyr::mutate(med = mean(amount)) %>%
+  dplyr::mutate(len = length(candidate)) %>%
+  dplyr::mutate(candidate_short = paste(gsub(",.*$", "", candidate)," $", 
+                                        round(mean(amount, digits=0))))
+
+df.datatemp$candidate_f <- factor(df.datatemp$candidate_short, 
+                                  levels = unique(arrange(df.datatemp, 
+                                                          med)$candidate_short))
 
 
 df.datatemp %>% 
@@ -726,18 +789,20 @@ df.datatemp %>%
   facet_wrap(~ candidate_f) +
   geom_histogram() +
   geom_vline(aes(xintercept = med, group = candidate_f), colour = 'red') +
-  scale_x_log10() +
+  scale_x_log10(label=dollar) +
   scale_y_log10() +
   theme(legend.position="none") +
-  xlab("Amount Per Donation") + 
+  xlab("Amount Per Donation ($)") + 
   ylab("Number of Donations") +
   labs(
-    title="Contribution per Candidate",
-    caption="Heading = (Candidate Name) - $(Mean Donation)")
+    title="Contribution per Candidate (Logt10 Scaled)",
+    caption="Heading = (Candidate Name) $(Mean Donation)")
 rm(df.datatemp)
 
 
+
 ```
+
 
 ### Plot Two Description
 I find multi-faceted plots to be visaully appealing yet very informative.  With this plot we can quickly see which party a candidate is with simply by its color, the candidates mean donation by the red line, and the over all distribution of donation amounts by the underlying histogram.    With this layout we can easily get an idea of which economical section of society supported each candidate.   
@@ -752,11 +817,12 @@ I find multi-faceted plots to be visaully appealing yet very informative.  With 
   scale_y_continuous(lim=c(0,500)) + 
   theme(legend.position="none") +
   xlab("Party Affiliation") + 
-  ylab("Amount Per Donation") +
+  ylab("Amount Per Donation ($)") +
   labs(
     title="Contribution Averages by Party")
 
 ```
+
 
 ### Plot Three Description
 This third plot shows a representative of the donors per party by the average and quartiles of their donations.   Comparing Democrat and Republicans we see that the upper range of the Republicans is more than double of that of the Democrats.

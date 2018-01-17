@@ -4,10 +4,10 @@ title:  |
   | from State of Florida\n
 author: "Jason Carter"
 date: "3 Janaury 2018"
-knit: (function(inputFile, encoding) { out_dir <- '../docs'; rmarkdown::render(inputFile, encoding=encoding,output_file=file.path(dirname(inputFile), out_dir, 'P4_EDA.html')) })
+knit: (function(inputFile, encoding) { out_dir <- '../output'; rmarkdown::render(inputFile, encoding=encoding,output_file=file.path(dirname(inputFile), out_dir, 'P4_EDA.html')) })
 output: 
   html_document: 
-    css: "../docs/markdown.css"
+    css: "../output/markdown.css"
     fig_caption: yes
     keep_md: yes
     toc: yes
@@ -21,7 +21,6 @@ editor_options:
 ```{r setup, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 ## Defaults
 knitr::opts_knit$set(root.dir=normalizePath('../'))
-knitr::opts_chunk$set(fig.path = "../graphics/")
 knitr::opts_chunk$set(cache.path = "../cache/")
 knitr::opts_chunk$set(cache=TRUE)
 knitr::opts_chunk$set(include=TRUE)

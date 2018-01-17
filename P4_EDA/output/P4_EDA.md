@@ -81,14 +81,14 @@ summary(df.data)
 ## Donation Amounts
 Looking at the summary I see the max is \$20,000 which is above the FEC max of $2700, and the minimum is negative at -\$20,000.  Lets look at it.
 
-![](../graphics/DonationAmounts_Box-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/DonationAmounts_Box-1.png)<!-- -->
 
 Immediately I see that there are negative numbers in the amount column, which the FEC data dictionary shows as refunds, let take out those and anything above the statutory giving limit of $2700.   Note, in a more in-depth investigation I would want to remove the refund AND the matching donation, but that level of matching is not necesarry for my purposes here.
 
 
 
 
-![](../graphics/DonationAmounts_BoxFixed-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/DonationAmounts_BoxFixed-1.png)<!-- -->
 
 
 
@@ -122,7 +122,7 @@ ggmap(map) +
         scale_color_gradient(low="beige", high="blue")
 ```
 
-![](../graphics/ZipCode_Map-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/ZipCode_Map-1.png)<!-- -->
 
 Looking here, we know these errand dots are not proper.  Digging into zip-codes. I find that zipcodes between 32000 and 34999 are proper for Florida. (http://www.zipcodestogo.com/Florida/) All others I will remove.   
 
@@ -151,7 +151,7 @@ Looking at these, I don't see any indication of any specific reason they should 
 
 
 
-![](../graphics/ZipCode_Map_Fixed-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/ZipCode_Map_Fixed-1.png)<!-- -->
 
 ## Date Format
 Lets update the dates to something more usable so we can evaluate donations against a calendar of specific events, such as state primaries, significant polls and other date based items.
@@ -184,10 +184,10 @@ Due to that, I need to be able to match candidates to their sponsoring party.   
 ## 6    UNK     32
 ```
 
-![](../graphics/PartyCount_Bar-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PartyCount_Bar-1.png)<!-- -->
 
 A quick looks shows lots of Democratic donations
-![](../graphics/PartyAmount_Col-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PartyAmount_Col-1.png)<!-- -->
 
 A further look shows HIGHER Republican donations, interesting.
 
@@ -198,7 +198,7 @@ In order to map the data into something useful on the state level, I'm have aggr
 
 
 
-![](../graphics/County_Map-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/County_Map-1.png)<!-- -->
 
 Looks like a valid Florida data set to me.
 
@@ -286,34 +286,34 @@ In our plots below, I have plotted the data on a histogram.  We can quickly see 
 
 In the second plot below, With a quick log10 tranformation on the amounts we can see a somewhat normal distribution, but still a great deal below the mean (red line).
 
-![](../graphics/Donations_Histogram-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/Donations_Histogram-1.png)<!-- -->
 
-![](../graphics/DontationLog10_Histogram-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/DontationLog10_Histogram-1.png)<!-- -->
 
 To further our analysis, I have broke the donations down by party.   Each historgram shows a single party and their donations.    The title of each is annotated with the party's short indicator, as well as the mean donation amount.   The mean has also been displayed onto the histogram to so that relationship between mean and number of donations can be visualized.   The histograms are ordered smallest to largest by the average donation size.
 
-![](../graphics/PartyDonation_Histogram_Facet-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PartyDonation_Histogram_Facet-1.png)<!-- -->
 
 Taking the breakdown one step further, can present the same data at the Candidate level with the headings now showing the Candidate's last name and mean donation.   All candidates of the same party are colored the same to assist with visual evaluation.
 
-![](../graphics/CandidateDonation_Histogram_Facet-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/CandidateDonation_Histogram_Facet-1.png)<!-- -->
 
 ## Over Time
 
-![](../graphics/PartyDonation_Cumulative_Line-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PartyDonation_Cumulative_Line-1.png)<!-- -->
 
 Using this line chart based on party fund raising by date we see the Republicans clearly out-raised the Democrats from very early in the race. The numbers for the Democrats and Republicans are so large, they eclipes all other parties.   Since the fund raising started so early with no visual benefit, I trimmed the plot down to just the final two years of the campaign.
 
-![](../graphics/CandidateDonation_Cumulative_Line-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/CandidateDonation_Cumulative_Line-1.png)<!-- -->
 
 This isn't super useful as it has TOO much information, I'm going to reduce down the field of candidates to only the TOP 10 fundraisers and move the legend out of the way.
 
-![](../graphics/Top10CandidateDonation_Cumulative_Line-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/Top10CandidateDonation_Cumulative_Line-1.png)<!-- -->
 
 Breaking it down into individual candidates, we can see that, while Clinton soared in individual fundraising, a good number of the Republican candidates did quite well, contributing to the party's over all fund raising numbers. I think this is interesting to show how roll-up data can hide important details like this.
 
 
-![](../graphics/Top10CandidateDonation_Cumulative_Line_Annotated-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/Top10CandidateDonation_Cumulative_Line_Annotated-1.png)<!-- -->
 
 Adding more context clues, this graph becomes a bit more useful to understand the timelines.  We can see a few candidates drop off after Super Tuesday, and for the most part, all others fall off after their respective Parties Convention.    
 
@@ -338,15 +338,15 @@ Lets use the hetcor package and produce a Pearson correlation matrix to see if i
 
 Party, amount, and date are the only variables that have a correlation coefficient above 0.10 that would suggest any type of correlation.  I'm a bit surprised that county to party is not more correlated.  
 
-![](../graphics/MonthYear_Donations-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/MonthYear_Donations-1.png)<!-- -->
 
 Looking at donation counts over the months by year we can see noticeable amounts of donations starting rolling in April of 2015 with 2016 having the majority of donations.
 
-![](../graphics/MonthYear_Box-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/MonthYear_Box-1.png)<!-- -->
 
 Here we can see the mean (red dots) varying high during the early years of the election cycle which makes sense as candidate will likely get large personal donations from friends, families and insiders first before hitting the campaign trail which would start to roll in the smaller personal dontations, which also explains the size of the 2016 box as the donations are concentrated in a much more compact range.
 
-![](../graphics/PartyAmount_Box-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PartyAmount_Box-1.png)<!-- -->
 
 
 
@@ -372,13 +372,13 @@ I'm curious to see how donors differ from different parts of the states.   I spe
 
 
 
-![](../graphics/MapDensity-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/MapDensity-1.png)<!-- -->
 
 This map does a good job of showing distribution but not comparison to others.  Lets try it a different way.
 
 
 
-![](../graphics/MapDScatter-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/MapDScatter-1.png)<!-- -->
 
 Looking at this, we can see that my hunch was pretty accurate.  Most metropolitan areas are covered with Democratic donations as well as military towns Pensacola, Eglin Air Force Base and Jacksonville.   The majority of the blue markers show up in more rural areas, or the more expensive retirement areas around Ft. Lauderdale.  
 
@@ -409,21 +409,21 @@ And the numbers pretty much confirm the visual.  Knowing about the various areas
 Of all the plots included in this analysis.  I found these to be the most interesting.
 
 ## Plot One
-![](../graphics/PlotOne-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PlotOne-1.png)<!-- -->
 
 ### Plot One Description
 
 This plot show the number of donors across the state. We see stronger support of Democratic candidate towards the larger metropolian areas, where as areas with high retirees and rural indivdiauls can be seen supporting the Republican party.
 
 ## Plot Two
-![](../graphics/PlotTwo-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PlotTwo-1.png)<!-- -->
 
 
 ### Plot Two Description
 I find multi-faceted plots to be visaully appealing yet very informative.  With this plot we can quickly see which party a candidate is with simply by its color, the candidates mean donation by the red line, and the over all distribution of donation amounts by the underlying histogram.    With this layout we can easily get an idea of which economical section of society supported each candidate.   
 
 ## Plot Three 
-![](../graphics/PlotThree-1.png)<!-- -->
+![](/Users/jason/Documents/WGU/DAND/P4_EDA/code/../docs/P4_EDA_files/figure-html/PlotThree-1.png)<!-- -->
 
 
 ### Plot Three Description

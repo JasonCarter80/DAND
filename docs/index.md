@@ -12,7 +12,7 @@ of the course-work from Western Governors University's [Data Management/Data Ana
 1. Statstics - [Testing a Perceptual Phenomenon](/P1_Test_A_Perceptual_Phenomenon.html)
 2. Intro to Data Analysis - [Investigate a Dataset](/P2_Pandas.html)
 3. Data Wrangling - [Wrangle OpenStreetMap Data](/P3_Data_Wrangling.html)
-4. Exploratory Data Analysis - Explore and Summarize Data
+4. Exploratory Data Analysis - [Explore and Summarize Data](/P4_EDA.html)
 5. Intro to Machine Learning - Identify Fraud from Enron Email
 6. Data Visualization - Make Effective Data Visualization
 

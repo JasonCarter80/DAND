@@ -1,0 +1,6 @@
+node_addresses.csv filter=lfs diff=lfs merge=lfs -text
+nodes.csv filter=lfs diff=lfs merge=lfs -text
+nodes_tags.csv filter=lfs diff=lfs merge=lfs -text
+ways.csv filter=lfs diff=lfs merge=lfs -text
+ways_nodes.csv filter=lfs diff=lfs merge=lfs -text
+ways_tags.csv filter=lfs diff=lfs merge=lfs -text
